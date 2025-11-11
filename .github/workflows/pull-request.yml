@@ -1,0 +1,9 @@
+name: 'Auto Assign'
+on: pull_request
+
+jobs:
+  add-reviews:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./
