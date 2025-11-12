@@ -12,7 +12,7 @@
     "test": "jest",
     "format": "prettier --write **/*.ts",
     "format-check": "prettier --check **/*.ts",
-    "package": "ncc build --source-map --license licenses.txt"
+    "package": "npm run build && ncc build --source-map --license licenses.txt"
   },
   "author": "step-security",
   "license": "MIT",
