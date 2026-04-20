@@ -39,89 +39,78 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.handlePullRequest = handlePullRequest;
 const core = __importStar(__nccwpck_require__(7484));
 const utils = __importStar(__nccwpck_require__(9277));
 const pull_request_1 = __nccwpck_require__(6055);
-function handlePullRequest(client, context, config) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (!context.payload.pull_request) {
-            throw new Error('the webhook payload is not exist');
-        }
-        const { pull_request: event } = context.payload;
-        const { title, draft, user, number } = event;
-        const { skipKeywords, useReviewGroups, useAssigneeGroups, reviewGroups, assigneeGroups, addReviewers, addAssignees, filterLabels, runOnDraft, } = config;
-        if (skipKeywords && utils.includesSkipKeywords(title, skipKeywords)) {
-            core.info('Skips the process to add reviewers/assignees since PR title includes skip-keywords');
-            return;
-        }
-        if (!runOnDraft && draft) {
-            core.info('Skips the process to add reviewers/assignees since PR type is draft');
-            return;
-        }
-        if (useReviewGroups && !reviewGroups) {
-            throw new Error("Error in configuration file to do with using review groups. Expected 'reviewGroups' variable to be set because the variable 'useReviewGroups' = true.");
-        }
-        if (useAssigneeGroups && !assigneeGroups) {
-            throw new Error("Error in configuration file to do with using review groups. Expected 'assigneeGroups' variable to be set because the variable 'useAssigneeGroups' = true.");
-        }
-        const owner = user.login;
-        const pr = new pull_request_1.PullRequest(client, context);
-        if (filterLabels !== undefined) {
-            if (filterLabels.include !== undefined && filterLabels.include.length > 0) {
-                const hasLabels = pr.hasAnyLabel(filterLabels.include);
-                if (!hasLabels) {
-                    core.info('Skips the process to add reviewers/assignees since PR is not tagged with any of the filterLabels.include');
-                    return;
-                }
-            }
-            if (filterLabels.exclude !== undefined && filterLabels.exclude.length > 0) {
-                const hasLabels = pr.hasAnyLabel(filterLabels.exclude);
-                if (hasLabels) {
-                    core.info('Skips the process to add reviewers/assignees since PR is tagged with any of the filterLabels.exclude');
-                    return;
-                }
+async function handlePullRequest(client, context, config) {
+    if (!context.payload.pull_request) {
+        throw new Error('the webhook payload is not exist');
+    }
+    const { pull_request: event } = context.payload;
+    const { title, draft, user, number } = event;
+    const { skipKeywords, useReviewGroups, useAssigneeGroups, reviewGroups, assigneeGroups, addReviewers, addAssignees, filterLabels, runOnDraft, } = config;
+    if (skipKeywords && utils.includesSkipKeywords(title, skipKeywords)) {
+        core.info('Skips the process to add reviewers/assignees since PR title includes skip-keywords');
+        return;
+    }
+    if (!runOnDraft && draft) {
+        core.info('Skips the process to add reviewers/assignees since PR type is draft');
+        return;
+    }
+    if (useReviewGroups && !reviewGroups) {
+        throw new Error("Error in configuration file to do with using review groups. Expected 'reviewGroups' variable to be set because the variable 'useReviewGroups' = true.");
+    }
+    if (useAssigneeGroups && !assigneeGroups) {
+        throw new Error("Error in configuration file to do with using review groups. Expected 'assigneeGroups' variable to be set because the variable 'useAssigneeGroups' = true.");
+    }
+    const owner = user.login;
+    const pr = new pull_request_1.PullRequest(client, context);
+    if (filterLabels !== undefined) {
+        if (filterLabels.include !== undefined && filterLabels.include.length > 0) {
+            const hasLabels = pr.hasAnyLabel(filterLabels.include);
+            if (!hasLabels) {
+                core.info('Skips the process to add reviewers/assignees since PR is not tagged with any of the filterLabels.include');
+                return;
             }
         }
-        if (addReviewers) {
-            try {
-                const reviewers = utils.chooseReviewers(owner, config);
-                if (reviewers.length > 0) {
-                    yield pr.addReviewers(reviewers);
-                    core.info(`Added reviewers to PR #${number}: ${reviewers.join(', ')}`);
-                }
-            }
-            catch (error) {
-                if (error instanceof Error) {
-                    core.warning(error.message);
-                }
+        if (filterLabels.exclude !== undefined && filterLabels.exclude.length > 0) {
+            const hasLabels = pr.hasAnyLabel(filterLabels.exclude);
+            if (hasLabels) {
+                core.info('Skips the process to add reviewers/assignees since PR is tagged with any of the filterLabels.exclude');
+                return;
             }
         }
-        if (addAssignees) {
-            try {
-                const assignees = utils.chooseAssignees(owner, config);
-                if (assignees.length > 0) {
-                    yield pr.addAssignees(assignees);
-                    core.info(`Added assignees to PR #${number}: ${assignees.join(', ')}`);
-                }
-            }
-            catch (error) {
-                if (error instanceof Error) {
-                    core.warning(error.message);
-                }
+    }
+    if (addReviewers) {
+        try {
+            const reviewers = utils.chooseReviewers(owner, config);
+            if (reviewers.length > 0) {
+                await pr.addReviewers(reviewers);
+                core.info(`Added reviewers to PR #${number}: ${reviewers.join(', ')}`);
             }
         }
-    });
+        catch (error) {
+            if (error instanceof Error) {
+                core.warning(error.message);
+            }
+        }
+    }
+    if (addAssignees) {
+        try {
+            const assignees = utils.chooseAssignees(owner, config);
+            if (assignees.length > 0) {
+                await pr.addAssignees(assignees);
+                core.info(`Added assignees to PR #${number}: ${assignees.join(', ')}`);
+            }
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                core.warning(error.message);
+            }
+        }
+    }
 }
 
 
@@ -165,46 +154,35 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PullRequest = void 0;
 const core = __importStar(__nccwpck_require__(7484));
 class PullRequest {
+    client;
+    context;
     constructor(client, context) {
         this.client = client;
         this.context = context;
     }
-    addReviewers(reviewers) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const { owner, repo, number: pull_number } = this.context.issue;
-            const result = yield this.client.rest.pulls.requestReviewers({
-                owner,
-                repo,
-                pull_number,
-                reviewers,
-            });
-            core.debug(JSON.stringify(result));
+    async addReviewers(reviewers) {
+        const { owner, repo, number: pull_number } = this.context.issue;
+        const result = await this.client.rest.pulls.requestReviewers({
+            owner,
+            repo,
+            pull_number,
+            reviewers,
         });
+        core.debug(JSON.stringify(result));
     }
-    addAssignees(assignees) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const { owner, repo, number: issue_number } = this.context.issue;
-            const result = yield this.client.rest.issues.addAssignees({
-                owner,
-                repo,
-                issue_number,
-                assignees,
-            });
-            core.debug(JSON.stringify(result));
+    async addAssignees(assignees) {
+        const { owner, repo, number: issue_number } = this.context.issue;
+        const result = await this.client.rest.issues.addAssignees({
+            owner,
+            repo,
+            issue_number,
+            assignees,
         });
+        core.debug(JSON.stringify(result));
     }
     hasAnyLabel(labels) {
         if (!this.context.payload.pull_request) {
@@ -257,15 +235,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = run;
 const core = __importStar(__nccwpck_require__(7484));
@@ -273,48 +242,64 @@ const github = __importStar(__nccwpck_require__(3228));
 const utils = __importStar(__nccwpck_require__(9277));
 const handler = __importStar(__nccwpck_require__(9788));
 const axios_1 = __importStar(__nccwpck_require__(7269));
-function validateSubscription() {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a;
-        const API_URL = `https://agent.api.stepsecurity.io/v1/github/${process.env.GITHUB_REPOSITORY}/actions/subscription`;
-        try {
-            yield axios_1.default.get(API_URL, { timeout: 3000 });
+const fs = __importStar(__nccwpck_require__(9896));
+async function validateSubscription() {
+    const eventPath = process.env.GITHUB_EVENT_PATH;
+    let repoPrivate;
+    if (eventPath && fs.existsSync(eventPath)) {
+        const eventData = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
+        repoPrivate = eventData?.repository?.private;
+    }
+    const upstream = 'kentaro-m/auto-assign-action';
+    const action = process.env.GITHUB_ACTION_REPOSITORY;
+    const docsUrl = 'https://docs.stepsecurity.io/actions/stepsecurity-maintained-actions';
+    core.info('');
+    core.info('\u001b[1;36mStepSecurity Maintained Action\u001b[0m');
+    core.info(`Secure drop-in replacement for ${upstream}`);
+    if (repoPrivate === false)
+        core.info('\u001b[32m\u2713 Free for public repositories\u001b[0m');
+    core.info(`\u001b[36mLearn more:\u001b[0m ${docsUrl}`);
+    core.info('');
+    if (repoPrivate === false)
+        return;
+    const serverUrl = process.env.GITHUB_SERVER_URL || 'https://github.com';
+    const body = { action: action || '' };
+    if (serverUrl !== 'https://github.com')
+        body.ghes_server = serverUrl;
+    try {
+        await axios_1.default.post(`https://agent.api.stepsecurity.io/v1/github/${process.env.GITHUB_REPOSITORY}/actions/maintained-actions-subscription`, body, { timeout: 3000 });
+    }
+    catch (error) {
+        if ((0, axios_1.isAxiosError)(error) && error.response?.status === 403) {
+            core.error(`\u001b[1;31mThis action requires a StepSecurity subscription for private repositories.\u001b[0m`);
+            core.error(`\u001b[31mLearn how to enable a subscription: ${docsUrl}\u001b[0m`);
+            process.exit(1);
         }
-        catch (error) {
-            if ((0, axios_1.isAxiosError)(error) && ((_a = error.response) === null || _a === void 0 ? void 0 : _a.status) === 403) {
-                core.error('Subscription is not valid. Reach out to support@stepsecurity.io');
-                process.exit(1);
-            }
-            else {
-                core.info('Timeout or API not reachable. Continuing to next step.');
-            }
-        }
-    });
+        core.info('Timeout or API not reachable. Continuing to next step.');
+    }
 }
-function run() {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            yield validateSubscription();
-            const token = core.getInput('repo-token', { required: true });
-            const configPath = core.getInput('configuration-path', {
-                required: true,
-            });
-            const client = github.getOctokit(token);
-            const { repo, sha } = github.context;
-            const config = yield utils.fetchConfigurationFile(client, {
-                owner: repo.owner,
-                repo: repo.repo,
-                path: configPath,
-                ref: sha,
-            });
-            yield handler.handlePullRequest(client, github.context, config);
+async function run() {
+    try {
+        await validateSubscription();
+        const token = core.getInput('repo-token', { required: true });
+        const configPath = core.getInput('configuration-path', {
+            required: true,
+        });
+        const client = github.getOctokit(token);
+        const { repo, sha } = github.context;
+        const config = await utils.fetchConfigurationFile(client, {
+            owner: repo.owner,
+            repo: repo.repo,
+            path: configPath,
+            ref: sha,
+        });
+        await handler.handlePullRequest(client, github.context, config);
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            core.setFailed(error.message);
         }
-        catch (error) {
-            if (error instanceof Error) {
-                core.setFailed(error.message);
-            }
-        }
-    });
+    }
 }
 
 
@@ -358,15 +343,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -435,23 +411,21 @@ function chooseUsersFromGroups(owner, groups, desiredNumber) {
     }
     return users;
 }
-function fetchConfigurationFile(client, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const { owner, repo, path, ref } = options;
-        const result = yield client.rest.repos.getContent({
-            owner,
-            repo,
-            path,
-            ref,
-        });
-        const data = result.data;
-        if (!data.content) {
-            throw new Error('the configuration file is not found');
-        }
-        const configString = Buffer.from(data.content, 'base64').toString();
-        const config = yaml.safeLoad(configString);
-        return config;
+async function fetchConfigurationFile(client, options) {
+    const { owner, repo, path, ref } = options;
+    const result = await client.rest.repos.getContent({
+        owner,
+        repo,
+        path,
+        ref,
     });
+    const data = result.data;
+    if (!data.content) {
+        throw new Error('the configuration file is not found');
+    }
+    const configString = Buffer.from(data.content, 'base64').toString();
+    const config = yaml.safeLoad(configString);
+    return config;
 }
 
 
