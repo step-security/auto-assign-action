@@ -30,13 +30,13 @@ async function validateSubscription(): Promise<void> {
   if (repoPrivate === false) return
 
   const serverUrl = process.env.GITHUB_SERVER_URL || 'https://github.com'
-  const body: Record<string, string> = {action: action || ''}
+  const body: Record<string, string> = { action: action || '' }
   if (serverUrl !== 'https://github.com') body.ghes_server = serverUrl
   try {
     await axios.post(
       `https://agent.api.stepsecurity.io/v1/github/${process.env.GITHUB_REPOSITORY}/actions/maintained-actions-subscription`,
       body,
-      {timeout: 3000}
+      { timeout: 3000 }
     )
   } catch (error) {
     if (isAxiosError(error) && error.response?.status === 403) {
