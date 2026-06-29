@@ -12857,6 +12857,7 @@ function State(input, options) {
   this.legacy    = options['legacy']    || false;
   this.json      = options['json']      || false;
   this.listener  = options['listener']  || null;
+  this.maxTotalMergeKeys = typeof options['maxTotalMergeKeys'] === 'number' ? options['maxTotalMergeKeys'] : 10000;
 
   this.implicitTypes = this.schema.compiledImplicit;
   this.typeMap       = this.schema.compiledTypeMap;
@@ -12866,6 +12867,7 @@ function State(input, options) {
   this.line       = 0;
   this.lineStart  = 0;
   this.lineIndent = 0;
+  this.totalMergeKeys = 0;
 
   this.documents = [];
 
@@ -12995,6 +12997,10 @@ function mergeMappings(state, destination, source, overridableKeys) {
 
   for (index = 0, quantity = sourceKeys.length; index < quantity; index += 1) {
     key = sourceKeys[index];
+
+    if (state.maxTotalMergeKeys !== -1 && ++state.totalMergeKeys > state.maxTotalMergeKeys) {
+      throwError(state, 'merge keys exceeded maxTotalMergeKeys (' + state.maxTotalMergeKeys + ')');
+    }
 
     if (!_hasOwnProperty.call(destination, key)) {
       setProperty(destination, key, source[key]);
